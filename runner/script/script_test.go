@@ -62,6 +62,11 @@ export PATH=$PATH:$GOBIN
 
 set -e
 
+mkdir -p /etc/apt/apt.conf.d
+cat <<EOF > /etc/apt/apt.conf.d/90forceyes
+APT::Get::Assume-Yes "true";APT::Get::force-yes "true";
+EOF
+
 echo JCBnbyBidWlsZAo= | base64 -d
 go build
 
@@ -82,6 +87,11 @@ export PATH=$PATH:$GOBIN
 
 set -e
 
+mkdir -p /etc/apt/apt.conf.d
+cat <<EOF > /etc/apt/apt.conf.d/90forceyes
+APT::Get::Assume-Yes "true";APT::Get::force-yes "true";
+EOF
+
 mkdir -p -m 0700 $HOME/.ssh
 cat <<EOF > $HOME/.ssh/id_rsa
 -----BEGIN RSA PRIVATE KEY----- MIIEpQIBAAKCAQEA3Tz2...
@@ -90,11 +100,6 @@ chmod 0600 $HOME/.ssh/id_rsa
 
 cat <<EOF > $HOME/.ssh/config
 StrictHostKeyChecking no
-EOF
-
-mkdir -p /etc/apt/apt.conf.d
-cat <<EOF > /etc/apt/apt.conf.d/90forceyes
-APT::Get::Assume-Yes "true";APT::Get::force-yes "true";
 EOF
 
 cat <<EOF > $HOME/.netrc

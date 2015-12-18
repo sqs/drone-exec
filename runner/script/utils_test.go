@@ -69,11 +69,6 @@ chmod 0600 $HOME/.ssh/id_rsa
 cat <<EOF > $HOME/.ssh/config
 StrictHostKeyChecking no
 EOF
-
-mkdir -p /etc/apt/apt.conf.d
-cat <<EOF > /etc/apt/apt.conf.d/90forceyes
-APT::Get::Assume-Yes "true";APT::Get::force-yes "true";
-EOF
 `
 
 var script = `
