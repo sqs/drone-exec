@@ -30,7 +30,6 @@ func writeKey(key string) string {
 	}
 	buf.WriteString(fmt.Sprintf(keyScript, key))
 	buf.WriteString(keyConfScript)
-	buf.WriteString(forceYesScript)
 	return buf.String()
 }
 
