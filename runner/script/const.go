@@ -59,10 +59,12 @@ EOF
 // to the build script to ensure apt-get installs
 // don't prompt the user to accept changes.
 const forceYesScript = `
+if [ "$(id -u)" = "0" ]; then
 mkdir -p /etc/apt/apt.conf.d
 cat <<EOF > /etc/apt/apt.conf.d/90forceyes
 APT::Get::Assume-Yes "true";APT::Get::force-yes "true";
 EOF
+fi
 `
 
 // traceScript is a helper script that is added
