@@ -27,10 +27,11 @@ rm -rf $HOME/.ssh/id_rsa
 // the build script to enable cloning private git
 // repositories of http.
 const netrcScript = `
-cat <<EOF > $HOME/.netrc
+cat <<EOF >> $HOME/.netrc
 machine %s
 login %s
 password %s
+
 EOF
 chmod 0600 $HOME/.netrc
 `
