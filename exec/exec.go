@@ -27,16 +27,16 @@ import (
 // Payload defines the raw plugin payload that
 // stores the build metadata and configuration.
 type Payload struct {
-	Yaml      string            `json:"config"`
-	YamlEnc   string            `json:"secret"`
-	Repo      *plugin.Repo      `json:"repo"`
-	Build     *plugin.Build     `json:"build"`
-	BuildLast *plugin.Build     `json:"build_last"`
-	Job       *plugin.Job       `json:"job"`
-	Netrc     *plugin.Netrc     `json:"netrc"`
-	Keys      *plugin.Keypair   `json:"keys"`
-	System    *plugin.System    `json:"system"`
-	Workspace *plugin.Workspace `json:"workspace"`
+	Yaml      string               `json:"config"`
+	YamlEnc   string               `json:"secret"`
+	Repo      *plugin.Repo         `json:"repo"`
+	Build     *plugin.Build        `json:"build"`
+	BuildLast *plugin.Build        `json:"build_last"`
+	Job       *plugin.Job          `json:"job"`
+	Netrc     []*plugin.NetrcEntry `json:"netrc"`
+	Keys      *plugin.Keypair      `json:"keys"`
+	System    *plugin.System       `json:"system"`
+	Workspace *plugin.Workspace    `json:"workspace"`
 }
 
 // Options defines execution options.

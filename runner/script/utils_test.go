@@ -51,10 +51,11 @@ func Test_Utils(t *testing.T) {
 }
 
 var netrc = `
-cat <<EOF > $HOME/.netrc
+cat <<EOF >> $HOME/.netrc
 machine foo
 login bar
 password baz
+
 EOF
 chmod 0600 $HOME/.netrc
 `
