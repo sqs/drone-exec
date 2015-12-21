@@ -33,10 +33,17 @@ func Test_Rule(t *testing.T) {
 				Commands: []string{"go build", "go test"},
 			}
 			w := &plugin.Workspace{
-				Netrc: &plugin.Netrc{
-					Machine:  "foo",
-					Login:    "bar",
-					Password: "baz",
+				Netrc: []*plugin.NetrcEntry{
+					{
+						Machine:  "foo",
+						Login:    "bar",
+						Password: "baz",
+					},
+					{
+						Machine:  "qux",
+						Login:    "zip",
+						Password: "zap",
+					},
 				},
 				Keys: &plugin.Keypair{
 					Private: "-----BEGIN RSA PRIVATE KEY----- MIIEpQIBAAKCAQEA3Tz2...",
@@ -106,10 +113,19 @@ cat <<EOF > $HOME/.ssh/config
 StrictHostKeyChecking no
 EOF
 
-cat <<EOF > $HOME/.netrc
+cat <<EOF >> $HOME/.netrc
 machine foo
 login bar
 password baz
+
+EOF
+chmod 0600 $HOME/.netrc
+
+cat <<EOF >> $HOME/.netrc
+machine qux
+login zip
+password zap
+
 EOF
 chmod 0600 $HOME/.netrc
 

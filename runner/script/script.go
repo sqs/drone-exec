@@ -17,15 +17,19 @@ func Encode(w *plugin.Workspace, c *dockerclient.ContainerConfig, n *parser.Dock
 	buf.WriteString(setupScript)
 	buf.WriteString(forceYesScript)
 
-	if w != nil && w.Keys != nil && w.Netrc != nil {
-		buf.WriteString(writeKey(
-			w.Keys.Private,
-		))
-		buf.WriteString(writeNetrc(
-			w.Netrc.Machine,
-			w.Netrc.Login,
-			w.Netrc.Password,
-		))
+	if w != nil {
+		if w.Keys != nil {
+			buf.WriteString(writeKey(
+				w.Keys.Private,
+			))
+		}
+		for _, netrc := range w.Netrc {
+			buf.WriteString(writeNetrc(
+				netrc.Machine,
+				netrc.Login,
+				netrc.Password,
+			))
+		}
 	}
 
 	buf.WriteString(writeCmds(n.Commands))
