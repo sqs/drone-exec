@@ -115,6 +115,9 @@ func (b *Build) walk(node parser.Node, state *State) (err error) {
 		default:
 			conf := toContainerConfig(node)
 			conf.Cmd = toCommand(state, node)
+			if t := node.Type(); t == parser.NodeDeploy || t == parser.NodePublish {
+				conf.WorkingDir = state.Workspace.Path
+			}
 			info, err := docker.Run(state.Client, conf, auth, node.Pull, state.Stdout, state.Stderr)
 			if err != nil {
 				state.Exit(255)
