@@ -14,7 +14,7 @@ var (
 	ErrImageWhitelist = errors.New("Yaml must specify am image from the white-list")
 )
 
-const (
+var (
 	DefaultCloner = "plugins/drone-git"   // Default clone plugin.
 	DefaultCacher = "plugins/drone-cache" // Default cache plugin.
 	DefaultMatch  = "plugins/*"           // Default plugin whitelist.
