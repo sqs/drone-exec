@@ -13,10 +13,10 @@ import (
 var ErrNoImage = errors.New("Yaml must specify an image for every step")
 
 // Default clone plugin.
-const DefaultCloner = "plugins/drone-git"
+var DefaultCloner = "plugins/drone-git"
 
 // Default cache plugin.
-const DefaultCacher = "plugins/drone-cache"
+var DefaultCacher = "plugins/drone-cache"
 
 type Build struct {
 	tree  *parser.Tree
