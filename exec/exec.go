@@ -3,8 +3,12 @@ package exec
 import (
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/drone/drone-exec/docker"
 	"github.com/drone/drone-exec/parser"
@@ -182,9 +186,26 @@ func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
 	}
 	defer controller.Destroy()
 
-	// TODO(sqs): Catch sigterm, sigint, and enforce timeouts. Deleted
-	// some code that set up a signal.Notify callback and that had a
-	// timeout (based on payload.Repo.Timeout).
+	// watch for sigkill (timeout or cancel build)
+	killc := make(chan os.Signal, 1)
+	signal.Notify(killc, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-killc
+		log.Println("Cancel request received, killing process")
+		controller.Destroy() // possibe race here. implement lock on the other end
+		os.Exit(130)         // cancel is treated like ctrl+c
+	}()
+
+	go func() {
+		var timeout = payload.Repo.Timeout
+		if timeout == 0 {
+			timeout = 60
+		}
+		<-time.After(time.Duration(timeout) * time.Minute)
+		log.Println("Timeout request received, killing process")
+		controller.Destroy() // possibe race here. implement lock on the other end
+		os.Exit(128)         // cancel is treated like ctrl+c
+	}()
 
 	state := &runner.State{
 		Client:    controller,
