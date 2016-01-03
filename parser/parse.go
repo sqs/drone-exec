@@ -40,37 +40,37 @@ func Load(conf *yaml.Config, rules []RuleFunc) (*Tree, error) {
 	}
 
 	// Clone.
-	err = tree.appendPlugin(NodeClone, conf.Clone)
+	err = tree.appendPlugin(NodeClone, yaml.PluginItem{Plugin: conf.Clone})
 	if err != nil {
 		return nil, err
 	}
 
 	// Compose.
-	err = tree.appendCompose(conf.Compose.Slice())
+	err = tree.appendCompose(conf.Compose)
 	if err != nil {
 		return nil, err
 	}
 
 	// Build
-	err = tree.appendBuild(conf.Build.Slice())
+	err = tree.appendBuild(conf.Build)
 	if err != nil {
 		return nil, err
 	}
 
 	// Publish.
-	err = tree.appendPlugin(NodePublish, conf.Publish.Slice()...)
+	err = tree.appendPlugin(NodePublish, conf.Publish...)
 	if err != nil {
 		return nil, err
 	}
 
 	// Deploy.
-	err = tree.appendPlugin(NodeDeploy, conf.Deploy.Slice()...)
+	err = tree.appendPlugin(NodeDeploy, conf.Deploy...)
 	if err != nil {
 		return nil, err
 	}
 
 	// Plugin.
-	err = tree.appendPlugin(NodeNotify, conf.Notify.Slice()...)
+	err = tree.appendPlugin(NodeNotify, conf.Notify...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +78,9 @@ func Load(conf *yaml.Config, rules []RuleFunc) (*Tree, error) {
 	return tree, nil
 }
 
-func (t *Tree) appendPlugin(typ NodeType, plugins ...yaml.Plugin) error {
+func (t *Tree) appendPlugin(typ NodeType, plugins ...yaml.PluginItem) error {
 	for _, plugin := range plugins {
-		node := newPluginNode(typ, plugin)
+		node := newPluginNode(typ, plugin.Plugin)
 		for _, rule := range t.rules {
 			err := rule(node)
 			if err != nil {
@@ -102,9 +102,9 @@ func (t *Tree) appendPlugin(typ NodeType, plugins ...yaml.Plugin) error {
 	return nil
 }
 
-func (t *Tree) appendBuild(builds []yaml.Build) error {
+func (t *Tree) appendBuild(builds []yaml.BuildItem) error {
 	for _, build := range builds {
-		node := newBuildNode(NodeBuild, build)
+		node := newBuildNode(NodeBuild, build.Build)
 		for _, rule := range t.rules {
 			if err := rule(node); err != nil {
 				return err
@@ -127,12 +127,12 @@ func (t *Tree) appendCache(cache yaml.Plugin) error {
 	if len(cache.Vargs) == 0 {
 		return nil
 	}
-	return t.appendPlugin(NodeCache, cache)
+	return t.appendPlugin(NodeCache, yaml.PluginItem{Plugin: cache})
 }
 
-func (t *Tree) appendCompose(plugins []yaml.Container) error {
-	for _, plugin := range plugins {
-		node := newDockerNode(NodeCompose, plugin)
+func (t *Tree) appendCompose(containers []yaml.ContainerItem) error {
+	for _, container := range containers {
+		node := newDockerNode(NodeCompose, container.Container)
 		for _, rule := range t.rules {
 			err := rule(node)
 			if err != nil {

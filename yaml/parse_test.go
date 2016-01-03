@@ -30,36 +30,36 @@ func TestParse(t *testing.T) {
 		})
 
 		g.It("Should parse build image", func() {
-			g.Assert(conf.Build.Slice()[0].Image).Equal("golang")
+			g.Assert(conf.Build[0].Image).Equal("golang")
 		})
 
 		g.It("Should parse build commands", func() {
-			g.Assert(conf.Build.Slice()[0].Commands).Equal([]string{"go build", "go test"})
+			g.Assert(conf.Build[0].Commands).Equal([]string{"go build", "go test"})
 		})
 
 		g.It("Should parse volume configuration", func() {
-			g.Assert(conf.Build.Slice()[0].Volumes).Equal([]string{"/tmp/volumes"})
+			g.Assert(conf.Build[0].Volumes).Equal([]string{"/tmp/volumes"})
 		})
 
 		g.It("Should parse network configuration", func() {
-			g.Assert(conf.Build.Slice()[0].Net).Equal("bridge")
+			g.Assert(conf.Build[0].Net).Equal("bridge")
 		})
 
 		g.It("Should parse environment variable map", func() {
-			g.Assert(conf.Clone.Environment.Slice()).Equal(
-				[]string{"GIT_DIR=.git"},
+			g.Assert(conf.Clone.Environment).Equal(
+				MapEqualSlice{"GIT_DIR=.git"},
 			)
 		})
 
 		g.It("Should parse environment variable slice", func() {
-			g.Assert(conf.Build.Slice()[0].Environment.Slice()).Equal(
-				[]string{"GO15VENDOREXPERIMENT=1"},
+			g.Assert(conf.Build[0].Environment).Equal(
+				MapEqualSlice{"GO15VENDOREXPERIMENT=1"},
 			)
 		})
 
 		g.It("Should parse docker command slice", func() {
-			g.Assert(conf.Compose.Slice()[0].Command.Slice()).Equal(
-				[]string{
+			g.Assert(conf.Compose[0].Command).Equal(
+				Command{
 					"redis-server",
 					"/usr/local/etc/redis/redis.conf",
 					"--appendonly",
@@ -69,8 +69,8 @@ func TestParse(t *testing.T) {
 		})
 
 		g.It("Should parse docker command string", func() {
-			g.Assert(conf.Compose.Slice()[1].Command.Slice()).Equal(
-				[]string{
+			g.Assert(conf.Compose[1].Command).Equal(
+				Command{
 					"--storageEngine",
 					"wiredTiger",
 				},
@@ -78,20 +78,20 @@ func TestParse(t *testing.T) {
 		})
 
 		g.It("Should allow multiple plugins of same type", func() {
-			s := conf.Deploy.Slice()
+			s := conf.Deploy
 			g.Assert(s[0].Image).Equal("heroku")
 			g.Assert(s[1].Image).Equal("heroku")
 		})
 
 		g.It("Should maintain plugin ordering", func() {
-			s := conf.Deploy.Slice()
+			s := conf.Deploy
 			g.Assert(s[0].Vargs["app"]).Equal("foo.com")
 			g.Assert(s[1].Vargs["app"]).Equal("dev.foo.com")
 		})
 
 		g.It("Should parse plugin filters", func() {
-			s := conf.Deploy.Slice()
-			g.Assert(s[0].Filter.Branch.Slice()).Equal([]string{"master"})
+			s := conf.Deploy
+			g.Assert(s[0].Filter.Branch).Equal(Stringorslice{"master"})
 			g.Assert(s[1].Filter.Repo).Equal("octocat/helloworld")
 			g.Assert(s[1].Filter.Matrix).Equal(map[string]string{"go_version": "1.5"})
 		})
@@ -104,27 +104,27 @@ func TestParse(t *testing.T) {
 		g.It("Should parse a Yaml with variables", func() {
 			conf, err := ParseString(variables)
 			g.Assert(err).Equal(nil)
-			g.Assert(conf.Build.Slice()[0].Image).Equal("golang")
-			g.Assert(conf.Build.Slice()[0].Environment.Slice()).Equal(
-				[]string{"GO15VENDOREXPERIMENT=1"},
+			g.Assert(conf.Build[0].Image).Equal("golang")
+			g.Assert(conf.Build[0].Environment).Equal(
+				MapEqualSlice{"GO15VENDOREXPERIMENT=1"},
 			)
-			g.Assert(conf.Build.Slice()[0].Commands).Equal([]string{"go build", "go test"})
-			g.Assert(conf.Build.Slice()[0].Volumes).Equal([]string{"/tmp/volumes"})
-			g.Assert(conf.Build.Slice()[0].Net).Equal("bridge")
-			g.Assert(conf.Build.Slice()[0].Privileged).Equal(true)
+			g.Assert(conf.Build[0].Commands).Equal([]string{"go build", "go test"})
+			g.Assert(conf.Build[0].Volumes).Equal([]string{"/tmp/volumes"})
+			g.Assert(conf.Build[0].Net).Equal("bridge")
+			g.Assert(conf.Build[0].Privileged).Equal(true)
 		})
 
 		g.It("Should parse a Yaml with multiple build steps", func() {
 			conf, err := ParseString(multiBuild)
 			g.Assert(err).Equal(nil)
-			g.Assert(conf.Build.Slice()[0].Image).Equal("golang")
-			g.Assert(conf.Build.Slice()[0].Environment.Slice()).Equal(
-				[]string{"GO15VENDOREXPERIMENT=1"},
+			g.Assert(conf.Build[0].Image).Equal("golang")
+			g.Assert(conf.Build[0].Environment).Equal(
+				MapEqualSlice{"GO15VENDOREXPERIMENT=1"},
 			)
-			g.Assert(conf.Build.Slice()[0].Commands).Equal([]string{"go build", "go test"})
+			g.Assert(conf.Build[0].Commands).Equal([]string{"go build", "go test"})
 
-			g.Assert(conf.Build.Slice()[1].Image).Equal("node")
-			g.Assert(conf.Build.Slice()[1].Commands).Equal([]string{"npm install", "npm test"})
+			g.Assert(conf.Build[1].Image).Equal("node")
+			g.Assert(conf.Build[1].Commands).Equal([]string{"npm install", "npm test"})
 		})
 	})
 }
