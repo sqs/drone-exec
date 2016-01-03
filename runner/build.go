@@ -2,6 +2,8 @@ package runner
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	// log "github.com/Sirupsen/logrus"
 	"github.com/drone/drone-exec/docker"
@@ -101,9 +103,26 @@ func (b *Build) walk(node parser.Node, state *State) (err error) {
 
 		default:
 			conf := toContainerConfig(node)
-			conf.Cmd = toCommand(state, node)
+			if len(conf.Cmd) == 0 {
+				// Allow Drone CI plugins that have their own CMD and
+				// don't expect payload JSON in the args.
+				conf.Cmd = toCommand(state, node)
+			}
 			if t := node.Type(); t == parser.NodeDeploy || t == parser.NodePublish {
 				conf.WorkingDir = state.Workspace.Path
+			}
+			if state.Repo.IsPrivate {
+				// TODO(sqs!native-ci): Can we do this for public repos too?
+				// TODO(sqs!native-ci): also write SSH keys
+				var netrcData []string
+				for _, netrc := range state.Workspace.Netrc {
+					netrcData = append(netrcData,
+						fmt.Sprintf("machine %s login %s password %s",
+							netrc.Machine, netrc.Login, netrc.Password,
+						),
+					)
+				}
+				conf.Env = append(conf.Env, "NETRC_DATA="+strings.Join(netrcData, " "))
 			}
 			info, err := docker.Run(state.Client, conf, auth, node.Pull, state.Stdout, state.Stderr)
 			if err != nil {
