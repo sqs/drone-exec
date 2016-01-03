@@ -2,14 +2,21 @@ package yaml
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/flynn/go-shlex"
 	"gopkg.in/yaml.v2"
 )
 
+func NewCommand(parts ...string) Command { return Command{parts} }
+
 type Command struct {
 	parts []string
+}
+
+func (s Command) MarshalYAML() (interface{}, error) {
+	return s.parts, nil
 }
 
 func (s *Command) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -38,6 +45,27 @@ type MapEqualSlice struct {
 	parts []string
 }
 
+func NewMapEqualSlice(m map[string]string) MapEqualSlice {
+	o := MapEqualSlice{parts: make([]string, 0, len(m))}
+	for k, v := range m {
+		o.parts = append(o.parts, k+"="+v)
+	}
+	sort.Strings(o.parts)
+	return o
+}
+
+func (s MapEqualSlice) MarshalYAML() (interface{}, error) {
+	m := make(map[string]string, len(s.parts))
+	for _, part := range s.parts {
+		kv := strings.SplitN(part, "=", 2)
+		if len(kv) == 1 {
+			kv = append(kv, "")
+		}
+		m[kv[0]] = kv[1]
+	}
+	return m, nil
+}
+
 func (s *MapEqualSlice) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	err := unmarshal(&s.parts)
 	if err == nil {
@@ -54,6 +82,7 @@ func (s *MapEqualSlice) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	for k, v := range mapType {
 		s.parts = append(s.parts, strings.Join([]string{k, v}, "="))
 	}
+	sort.Strings(s.parts)
 
 	return nil
 }
@@ -112,6 +141,15 @@ func (s *Stringorslice) Slice() []string {
 // unarmshal function to preserve ordering.
 type Pluginslice struct {
 	parts []Plugin
+	keys  []string
+}
+
+func (s Pluginslice) MarshalYAML() (interface{}, error) {
+	obj := yaml.MapSlice{}
+	for i, p := range s.parts {
+		obj = append(obj, yaml.MapItem{Key: s.keys[i], Value: p})
+	}
+	return obj, nil
 }
 
 func (s *Pluginslice) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -136,6 +174,7 @@ func (s *Pluginslice) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			plugin.Image = key
 		}
 		s.parts = append(s.parts, plugin)
+		s.keys = append(s.keys, key)
 		return nil
 	})
 	return err
@@ -145,10 +184,25 @@ func (s *Pluginslice) Slice() []Plugin {
 	return s.parts
 }
 
+// WithAppendedPlugin copies s and adds a new plugin with the given
+// key.
+func (s Pluginslice) WithAppendedPlugin(key string, p Plugin) Pluginslice {
+	return Pluginslice{append(s.parts, p), append(s.keys, key)}
+}
+
 // ContainerSlice is a slice of Containers with a custom
 // Yaml unarmshal function to preserve ordering.
 type Containerslice struct {
 	parts []Container
+	keys  []string
+}
+
+func (s Containerslice) MarshalYAML() (interface{}, error) {
+	obj := yaml.MapSlice{}
+	for i, p := range s.parts {
+		obj = append(obj, yaml.MapItem{Key: s.keys[i], Value: p})
+	}
+	return obj, nil
 }
 
 func (s *Containerslice) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -173,6 +227,7 @@ func (s *Containerslice) UnmarshalYAML(unmarshal func(interface{}) error) error 
 			ctr.Image = key
 		}
 		s.parts = append(s.parts, ctr)
+		s.keys = append(s.keys, key)
 		return nil
 	})
 }
@@ -181,10 +236,28 @@ func (s *Containerslice) Slice() []Container {
 	return s.parts
 }
 
+// WithAppendedContainer copies s and adds a new container with the
+// given key.
+func (s Containerslice) WithAppendedContainer(key string, ctr Container) Containerslice {
+	return Containerslice{append(s.parts, ctr), append(s.keys, key)}
+}
+
 // BuildStep holds the build step configuration using a custom
 // Yaml unarmshal function to preserve ordering.
 type BuildStep struct {
 	parts []Build
+	keys  []string
+}
+
+func (s BuildStep) MarshalYAML() (interface{}, error) {
+	if s.parts != nil && s.keys == nil {
+		return s.parts[0], nil
+	}
+	obj := yaml.MapSlice{}
+	for i, p := range s.parts {
+		obj = append(obj, yaml.MapItem{Key: s.keys[i], Value: p})
+	}
+	return obj, nil
 }
 
 func (s *BuildStep) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -214,12 +287,22 @@ func (s *BuildStep) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			return err
 		}
 		s.parts = append(s.parts, build)
+		s.keys = append(s.keys, key)
 		return nil
 	})
 }
 
 func (s *BuildStep) Slice() []Build {
 	return s.parts
+}
+
+// WithAppendedBuild copies s and adds a new Build with the
+// given key.
+func (s BuildStep) WithAppendedBuild(key string, build Build) BuildStep {
+	if s.parts != nil && s.keys == nil {
+		panic("can't append build to a non-multi-build section")
+	}
+	return BuildStep{append(s.parts, build), append(s.keys, key)}
 }
 
 // emitter defines the callback function used for
