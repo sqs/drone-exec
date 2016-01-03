@@ -50,6 +50,10 @@ type Options struct {
 	Debug  bool   // execute in debug mode
 	Force  bool   // force pull plugin images
 	Mount  string // mounts the volume on the host machine
+
+	// Monitor may be provided to track the state and receive logs for
+	// specific steps. If nil, logs are sent to stdout.
+	Monitor runner.MonitorFunc
 }
 
 // Error reports an error during execution of a build.
@@ -61,7 +65,7 @@ func (e *Error) Error() string { return fmt.Sprintf("build failed (exit code %d)
 
 // Exec executes a build with the given payload and options. If the
 // build fails, an *Error is returned.
-func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
+func Exec(payload Payload, opt Options) error {
 	var sec *secure.Secure
 	if payload.Keys != nil && len(payload.YamlEnc) != 0 {
 		var err error
@@ -220,10 +224,13 @@ func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
 		os.Exit(128)         // cancel is treated like ctrl+c
 	}()
 
+	if opt.Monitor == nil {
+		opt.Monitor = defaultMonitorFunc
+	}
+
 	state := &runner.State{
 		Client:    controller,
-		Stdout:    outw,
-		Stderr:    errw,
+		Monitor:   opt.Monitor,
 		Repo:      payload.Repo,
 		Build:     payload.Build,
 		BuildLast: payload.BuildLast,
@@ -293,3 +300,15 @@ func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
 
 	return nil
 }
+
+func defaultMonitorFunc(section, key string, node parser.Node) runner.Monitor { return defaultMonitor{} }
+
+type defaultMonitor struct{}
+
+func (defaultMonitor) Start() {}
+
+func (defaultMonitor) Skip() {}
+
+func (defaultMonitor) End(ok bool) {}
+
+func (defaultMonitor) Logger() (stdout, stderr io.Writer) { return os.Stdout, os.Stdout }

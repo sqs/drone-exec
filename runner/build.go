@@ -2,6 +2,7 @@ package runner
 
 import (
 	"errors"
+	"fmt"
 
 	// log "github.com/Sirupsen/logrus"
 	"github.com/drone/drone-exec/docker"
@@ -72,6 +73,14 @@ func (b *Build) walk(node parser.Node, key string, state *State) (err error) {
 				RegistryToken: node.AuthConfig.RegistryToken,
 			}
 		}
+
+		// Set up monitor.
+		mon := state.Monitor(string(node.Type()), key, node)
+		outw, errw := mon.Logger()
+		defer func() {
+			mon.End(!state.Failed())
+		}()
+
 		switch node.Type() {
 
 		case parser.NodeBuild:
@@ -79,8 +88,11 @@ func (b *Build) walk(node parser.Node, key string, state *State) (err error) {
 			// by defaulting the build steps to run when not failure. This is
 			// required now that we support multi-build steps.
 			if state.Failed() {
+				mon.Skip()
 				return
 			}
+
+			mon.Start()
 
 			conf := toContainerConfig(node)
 			conf.Env = append(conf.Env, toEnv(state)...)
@@ -91,26 +103,33 @@ func (b *Build) walk(node parser.Node, key string, state *State) (err error) {
 				script.Encode(nil, conf, node)
 			}
 
-			info, err := docker.Run(state.Client, conf, auth, node.Pull, state.Stdout, state.Stderr)
+			info, err := docker.Run(state.Client, conf, auth, node.Pull, outw, errw)
 			if err != nil {
 				state.Exit(255)
+				fmt.Fprintln(errw, err)
 			} else if info.State.ExitCode != 0 {
 				state.Exit(info.State.ExitCode)
 			}
 
 		case parser.NodeCompose:
+			mon.Start()
+
 			conf := toContainerConfig(node)
 			_, err := docker.Start(state.Client, conf, auth, node.Pull)
 			if err != nil {
+				fmt.Fprintln(errw, err)
 				state.Exit(255)
 			}
 
 		default:
+			mon.Start()
+
 			conf := toContainerConfig(node)
 			conf.Cmd = toCommand(state, node)
-			info, err := docker.Run(state.Client, conf, auth, node.Pull, state.Stdout, state.Stderr)
+			info, err := docker.Run(state.Client, conf, auth, node.Pull, outw, errw)
 			if err != nil {
 				state.Exit(255)
+				fmt.Fprintln(errw, err)
 			} else if info.State.ExitCode != 0 {
 				state.Exit(info.State.ExitCode)
 			}

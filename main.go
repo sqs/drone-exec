@@ -42,7 +42,7 @@ func main() {
 	}
 	log.SetFormatter(new(formatter))
 
-	err := exec.Exec(payload, opt, os.Stdout, os.Stdout)
+	err := exec.Exec(payload, opt)
 	if err != nil {
 		log.Println(err)
 		switch err := err.(type) {

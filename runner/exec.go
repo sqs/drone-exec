@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"io"
 	"sync"
 
 	"github.com/drone/drone-plugin-go/plugin"
@@ -23,7 +22,8 @@ type State struct {
 	// used to spawn container tasks.
 	Client dockerclient.Client
 
-	Stdout, Stderr io.Writer
+	// Monitor is called to obtain a monitor for a specific step.
+	Monitor MonitorFunc
 }
 
 // Exit writes the exit code. A non-zero value
