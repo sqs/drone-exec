@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"os"
@@ -173,7 +174,19 @@ func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
 	}
 	r := runner.Load(tree)
 
-	client, err := dockerclient.NewDockerClient("unix:///var/run/docker.sock", nil)
+	// TODO(sqs!native-ci): copied temporarily from https://github.com/drone/drone-exec/pull/13, godep update when that is merged into drone-exec
+	daemonURL := os.Getenv("DOCKER_HOST")
+	if daemonURL == "" {
+		daemonURL = "unix:///var/run/docker.sock"
+	}
+	var tlsConfig *tls.Config
+	if path := os.Getenv("DOCKER_CERT_PATH"); os.Getenv("DOCKER_TLS_VERIFY") != "" && path != "" {
+		tlsConfig, err = TLSConfigFromCertPath(path)
+		if err != nil {
+			return err
+		}
+	}
+	client, err := dockerclient.NewDockerClient(daemonURL, tlsConfig)
 	if err != nil {
 		return err
 	}
