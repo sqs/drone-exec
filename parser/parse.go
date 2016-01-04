@@ -97,7 +97,7 @@ func (t *Tree) appendPlugin(typ NodeType, plugins ...yaml.PluginItem) error {
 				return err
 			}
 		}
-		t.Root.append(fnode)
+		t.Root.append(plugin.Key, fnode)
 	}
 	return nil
 }
@@ -118,7 +118,7 @@ func (t *Tree) appendBuild(builds []yaml.BuildItem) error {
 				return err
 			}
 		}
-		t.Root.append(fnode)
+		t.Root.append(build.Key, fnode)
 	}
 	return nil
 }
@@ -139,7 +139,7 @@ func (t *Tree) appendCompose(containers []yaml.ContainerItem) error {
 				return err
 			}
 		}
-		t.Root.append(node)
+		t.Root.append(container.Key, node)
 	}
 	return nil
 }

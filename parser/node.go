@@ -3,7 +3,7 @@ package parser
 import "github.com/drone/drone-exec/yaml"
 
 // NodeType identifies the type of a parse tree node.
-type NodeType uint
+type NodeType string
 
 // Type returns itself and provides an easy default
 // implementation for embedding in a Node. Embedded
@@ -13,15 +13,15 @@ func (t NodeType) Type() NodeType {
 }
 
 const (
-	NodeList NodeType = 1 << iota
-	NodeFilter
-	NodeBuild
-	NodeCache
-	NodeClone
-	NodeDeploy
-	NodeCompose
-	NodeNotify
-	NodePublish
+	NodeList    NodeType = "list"
+	NodeFilter           = "filter"
+	NodeBuild            = "build"
+	NodeCache            = "cache"
+	NodeClone            = "clone"
+	NodeDeploy           = "deploy"
+	NodeCompose          = "compose"
+	NodeNotify           = "notify"
+	NodePublish          = "publish"
 )
 
 // Nodes.
@@ -34,11 +34,16 @@ type Node interface {
 type ListNode struct {
 	NodeType
 	Nodes []Node // nodes executed in lexical order.
+
+	// Keys are the map keys (in same order as Nodes), if this list is
+	// an ordered map. The values are the Nodes.
+	Keys []string
 }
 
 // Append appends a node to the list.
-func (l *ListNode) append(n ...Node) {
-	l.Nodes = append(l.Nodes, n...)
+func (l *ListNode) append(key string, n Node) {
+	l.Nodes = append(l.Nodes, n)
+	l.Keys = append(l.Keys, key)
 }
 
 func newListNode() *ListNode {

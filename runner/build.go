@@ -19,25 +19,29 @@ var DefaultCloner = "plugins/drone-git"
 var DefaultCacher = "plugins/drone-cache"
 
 type Build struct {
-	tree  *parser.Tree
-	flags parser.NodeType
+	tree *parser.Tree
+	typ  parser.NodeType
 }
 
 func (b *Build) Run(state *State) error {
-	return b.RunNode(state, 0)
+	return b.RunNode(state, "")
 }
 
-func (b *Build) RunNode(state *State, flags parser.NodeType) error {
-	b.flags = flags
-	return b.walk(b.tree.Root, state)
+func (b *Build) RunNode(state *State, typ parser.NodeType) error {
+	b.typ = typ
+	return b.walk(b.tree.Root, "", state)
 }
 
-func (b *Build) walk(node parser.Node, state *State) (err error) {
+func (b *Build) walk(node parser.Node, key string, state *State) (err error) {
 
 	switch node := node.(type) {
 	case *parser.ListNode:
-		for _, node := range node.Nodes {
-			err = b.walk(node, state)
+		for i, n := range node.Nodes {
+			if node.Nodes != nil {
+				key = node.Keys[i]
+			}
+
+			err = b.walk(n, key, state)
 			if err != nil {
 				break
 			}
@@ -45,11 +49,13 @@ func (b *Build) walk(node parser.Node, state *State) (err error) {
 
 	case *parser.FilterNode:
 		if isMatch(node, state) {
-			b.walk(node.Node, state)
+			if err := b.walk(node.Node, key, state); err != nil {
+				return err
+			}
 		}
 
 	case *parser.DockerNode:
-		if shouldSkip(b.flags, node.NodeType) {
+		if b.typ != node.NodeType {
 			break
 		}
 		if len(node.Image) == 0 {
@@ -129,13 +135,6 @@ func maybeEscalate(conf dockerclient.ContainerConfig, node *parser.DockerNode) {
 	conf.HostConfig.Privileged = true
 	conf.Entrypoint = []string{}
 	conf.Cmd = []string{}
-}
-
-// shouldSkip is a helper function that returns true if
-// node execution should be skipped. This happens when
-// the build is executed for a subset of build steps.
-func shouldSkip(flags parser.NodeType, nodeType parser.NodeType) bool {
-	return flags != 0 && flags&nodeType == 0
 }
 
 // shouldEscalate is a helper function that returns true

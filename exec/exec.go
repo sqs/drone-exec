@@ -247,15 +247,19 @@ func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
 	}
 	if opt.Build && !state.Failed() {
 		log.Debugln("Running Build and Compose steps")
-		err = r.RunNode(state, parser.NodeCompose|parser.NodeBuild)
-		if err != nil {
+		if err := r.RunNode(state, parser.NodeCompose); err != nil {
+			log.Debugln(err)
+		}
+		if err := r.RunNode(state, parser.NodeBuild); err != nil {
 			log.Debugln(err)
 		}
 	}
 	if opt.Deploy && !state.Failed() {
 		log.Debugln("Running Publish and Deploy steps")
-		err = r.RunNode(state, parser.NodePublish|parser.NodeDeploy)
-		if err != nil {
+		if err := r.RunNode(state, parser.NodePublish); err != nil {
+			log.Debugln(err)
+		}
+		if err := r.RunNode(state, parser.NodeDeploy); err != nil {
 			log.Debugln(err)
 		}
 	}
