@@ -5,6 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
+
+	"golang.org/x/net/context"
 
 	"github.com/drone/drone-exec/exec"
 	"github.com/drone/drone-exec/yaml"
@@ -42,7 +46,20 @@ func main() {
 	}
 	log.SetFormatter(new(formatter))
 
-	err := exec.Exec(payload, opt)
+	ctx := context.Background()
+
+	// Watch for sigkill (timeout or cancel build).
+	killc := make(chan os.Signal, 1)
+	signal.Notify(killc, syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		<-killc
+		log.Println("Cancel request received, killing process")
+		cancel()
+		os.Exit(130)
+	}()
+
+	err := exec.Exec(ctx, payload, opt)
 	if err != nil {
 		log.Println(err)
 		switch err := err.(type) {
